@@ -7,6 +7,7 @@ from rest_framework.test import APITransactionTestCase
 
 from children.models import Child
 from children.tests.factories import ChildFactory
+from register.models import Register
 
 from api.tests.utils import gen_image
 
@@ -15,7 +16,7 @@ class ChildViewSetCreateTestCase(APITransactionTestCase):
 
     reset_sequences = True
 
-    def test_ok(self):
+    def test_create_child_is_ok(self):
         new_child_data = {
             'photo': gen_image(),
             'name': 'Иван',
@@ -47,6 +48,118 @@ class ChildViewSetCreateTestCase(APITransactionTestCase):
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertEqual(Child.objects.all().count(), 0)
+
+    def test_create_without_surname(self):
+        new_child_data = {
+            'photo': gen_image(),
+            'name': 'Иван',
+            'patronymic': 'Иванович',
+            'sex': Child.MALE,
+            'birthday': '2014-12-22',
+            'room': '1А',
+            'is_study': True,
+        }
+
+        response = self.client.post(reverse('api:child'), data=new_child_data)
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(Child.objects.all().count(), 0)
+
+    def test_create_without_patronymic(self):
+        new_child_data = {
+            'photo': gen_image(),
+            'name': 'Иван',
+            'surname': 'Иванов',
+            'sex': Child.MALE,
+            'birthday': '2014-12-22',
+            'room': '1А',
+            'is_study': True,
+        }
+
+        response = self.client.post(reverse('api:child'), data=new_child_data)
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(Child.objects.all().count(), 0)
+
+    def test_create_without_photo(self):
+        new_child_data = {
+            'name': 'Иван',
+            'surname': 'Иванов',
+            'patronymic': 'Иванович',
+            'sex': Child.MALE,
+            'birthday': '2014-12-22',
+            'room': '1А',
+            'is_study': True,
+        }
+
+        response = self.client.post(reverse('api:child'), data=new_child_data)
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(Child.objects.all().count(), 0)
+
+    def test_create_without_sex(self):
+        new_child_data = {
+            'photo': gen_image(),
+            'name': 'Иван',
+            'surname': 'Иванов',
+            'patronymic': 'Иванович',
+            'birthday': '2014-12-22',
+            'room': '1А',
+            'is_study': True,
+        }
+
+        response = self.client.post(reverse('api:child'), data=new_child_data)
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(Child.objects.all().count(), 0)
+
+    def test_create_without_birthday(self):
+        new_child_data = {
+            'photo': gen_image(),
+            'name': 'Иван',
+            'surname': 'Иванов',
+            'patronymic': 'Иванович',
+            'sex': Child.MALE,
+            'room': '1А',
+            'is_study': True,
+        }
+
+        response = self.client.post(reverse('api:child'), data=new_child_data)
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(Child.objects.all().count(), 0)
+
+    def test_create_without_room(self):
+        new_child_data = {
+            'photo': gen_image(),
+            'name': 'Иван',
+            'surname': 'Иванов',
+            'patronymic': 'Иванович',
+            'sex': Child.MALE,
+            'birthday': '2014-12-22',
+            'is_study': True,
+        }
+
+        response = self.client.post(reverse('api:child'), data=new_child_data)
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(Child.objects.all().count(), 0)
+
+    def test_create_without_is_study(self):
+        new_child_data = {
+            'photo': gen_image(),
+            'name': 'Иван',
+            'surname': 'Иванов',
+            'patronymic': 'Иванович',
+            'sex': Child.MALE,
+            'birthday': '2014-12-22',
+            'room': '1А',
+        }
+
+        response = self.client.post(reverse('api:child'), data=new_child_data)
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        self.assertEqual(Child.objects.all().count(), 1)
 
 
 class ChildViewSetListTestCase(APITransactionTestCase):
@@ -185,3 +298,54 @@ class ChildViewSetPatchTestCase(APITransactionTestCase):
             reverse('api:child-detail', kwargs={'pk': child.id}), data=data)
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+
+class RegisterViewSetCreateTestCase(APITransactionTestCase):
+
+    reset_sequences = True
+
+    def test_create_register_is_ok(self):
+        child = ChildFactory()
+        data = {
+            'child': child.id,
+            'delegate_type': Register.MOTHER
+        }
+
+        response = self.client.post(reverse('api:register'), data=data)
+
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        self.assertEqual(Register.objects.all().count(), 1)
+
+    def test_create_without_delegate_type(self):
+        child = ChildFactory()
+        data = {
+            'child': child.id,
+        }
+
+        response = self.client.post(reverse('api:register'), data=data)
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(Register.objects.all().count(), 0)
+
+    def test_create_with_not_existed_child(self):
+        data = {
+            'child': 99,
+            'delegate_type': Register.FATHER
+        }
+
+        response = self.client.post(reverse('api:register'), data=data)
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(Register.objects.all().count(), 0)
+
+    def test_create_with_child_not_study(self):
+        child = ChildFactory(is_study=False)
+        data = {
+            'child': child.id,
+            'delegate_type': Register.FATHER
+        }
+
+        response = self.client.post(reverse('api:register'), data=data)
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(Register.objects.all().count(), 0)

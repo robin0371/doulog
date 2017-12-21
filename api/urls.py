@@ -1,6 +1,7 @@
 from django.conf.urls import url
 
-from api.views import ChildViewSet
+from api.views import ChildViewSet, RegisterViewSet
+
 
 urlpatterns = [
     url(r'^child/$', ChildViewSet.as_view(actions={
@@ -13,4 +14,9 @@ urlpatterns = [
         'put': 'update',
         'patch': 'partial_update',
     }), name='child-detail'),
+
+    url(r'^register/$', RegisterViewSet.as_view(actions={
+        'post': 'create',
+        'get': 'list'
+    }), name='register'),
 ]
